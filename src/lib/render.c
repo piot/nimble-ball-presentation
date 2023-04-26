@@ -52,7 +52,10 @@ static void renderCallback(void* _self, SrWindow* _)
 
     for (size_t i = 0; i < predicted->avatars.avatarCount; ++i) {
         const NlAvatar* avatar = &predicted->avatars.avatars[i];
-        srSpritesCopyEx(&self->spriteRender, &self->avatarSprite, avatar->position.x, avatar->position.y, 0, 1.0f);
+        bl_vector2i avatarRenderPos = simulationToRender(avatar->circle.center);
+        int degreesAngle = (int)(avatar->visualRotation*360.0f/(M_PI*2.0f));
+        CLOG_VERBOSE("degrees :%d (%f)" , degreesAngle, avatar->visualRotation);
+        srSpritesCopyEx(&self->spriteRender, &self->avatarSprite, avatarRenderPos.x, avatarRenderPos.y, degreesAngle, 1.0f);
     }
 
     bl_vector2i ballRenderPos = simulationToRender(predicted->ball.circle.center);
