@@ -1,0 +1,12 @@
+depsversion = "0.0.0"
+
+name = "piot/nimble-ball-presentation"
+version = "0.0.0"
+
+[[dependencies]]
+name = "piot/sdl-render"
+version = "*"
+
+[[dependencies]]
+name = "piot/nimble-ball-simulation"
+version = "*"
