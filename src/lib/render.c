@@ -36,6 +36,15 @@ void nlRenderInit(NlRender* self)
     setupBallSprite(&self->ballSprite, equipmentTexture);
 }
 
+static bl_vector2i simulationToRender(bl_vector2 pos)
+{
+    bl_vector2i result;
+    result.x = pos.x / 1;
+    result.y = pos.y / 1;
+
+    return result;
+}
+
 static void renderCallback(void* _self, SrWindow* _)
 {
     NlRender* self = (NlRender*) _self;
@@ -46,7 +55,8 @@ static void renderCallback(void* _self, SrWindow* _)
         srSpritesCopyEx(&self->spriteRender, &self->avatarSprite, avatar->position.x, avatar->position.y, 0, 1.0f);
     }
 
-    srSpritesCopyEx(&self->spriteRender, &self->ballSprite, predicted->ball.position.x, predicted->ball.position.y, 0,
+    bl_vector2i ballRenderPos = simulationToRender(predicted->ball.circle.center);
+    srSpritesCopyEx(&self->spriteRender, &self->ballSprite, ballRenderPos.x, ballRenderPos.y, 0,
                     1.0f);
 }
 
