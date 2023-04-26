@@ -33,7 +33,7 @@ add_executable(nimble_ball_presentation_example
 )
 
 if (WIN32)
-target_link_libraries(nimble_ball_presentation_example nimble_ball_presentation)
+target_link_libraries(nimble_ball_presentation_example PUBLIC nimble_ball_render_sdl)
 else()
 target_link_libraries(nimble_ball_presentation_example PUBLIC nimble_ball_render_sdl m)
 endif(WIN32)

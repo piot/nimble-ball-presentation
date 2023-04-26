@@ -55,8 +55,8 @@ int main(int argc, char* argv[])
 
     int i = 0;
     while (1) {
-        predicted.ball.position.x = i++;
-        predicted.ball.position.y = 20;
+        predicted.ball.circle.center.x = (float)i++;
+        predicted.ball.circle.center.y = 20;
         nlRenderUpdate(&render, &authoritative, &predicted);
         int wantsToQuit = checkSdlEvent();
         if (wantsToQuit) {

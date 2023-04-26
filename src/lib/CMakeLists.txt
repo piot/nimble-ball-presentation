@@ -50,5 +50,6 @@ target_include_directories(nimble_ball_render_sdl PUBLIC ${DEPS}piot/imprint/src
 target_include_directories(nimble_ball_render_sdl PUBLIC ${DEPS}piot/monotonic-time-c/src/include)
 target_include_directories(nimble_ball_render_sdl PUBLIC ${DEPS}piot/sdl-render/src/include)
 target_include_directories(nimble_ball_render_sdl PUBLIC ${DEPS}piot/nimble-ball-simulation/src/include)
+target_include_directories(nimble_ball_render_sdl PUBLIC ${DEPS}piot/basal-c/src/include)
 target_include_directories(nimble_ball_render_sdl PUBLIC ../include)
 
