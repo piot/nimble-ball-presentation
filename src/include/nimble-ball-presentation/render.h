@@ -6,6 +6,7 @@
 #define NIMBLE_BALL_RENDER_SDL_RENDER_H
 
 #include <sdl-render/sprite.h>
+#include <sdl-render/rect.h>
 #include <sdl-render/window.h>
 
 struct NlGame;
@@ -14,6 +15,7 @@ typedef struct NlRender {
     SrSprite avatarSprite;
     SrSprite ballSprite;
     SrSprites spriteRender;
+    SrRects rectangleRender;
     SrWindow window;
     const struct NlGame* authoritative;
     const struct NlGame* predicted;

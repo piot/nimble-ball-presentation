@@ -33,6 +33,7 @@ void nlRenderInit(NlRender* self)
     SDL_Texture* equipmentTexture = IMG_LoadTexture(self->window.renderer, "data/equipment.png");
 
     srSpritesInit(&self->spriteRender, self->window.renderer);
+    srRectsInit(&self->rectangleRender, self->window.renderer);
     setupAvatarSprite(&self->avatarSprite, avatarsTexture);
     setupBallSprite(&self->ballSprite, equipmentTexture);
 }
@@ -44,6 +45,24 @@ static bl_vector2i simulationToRender(BlVector2 pos)
     result.y = pos.y / 1;
 
     return result;
+}
+
+static void renderGoals(SrRects* rectangleRender, const NlConstants* constants)
+{
+    SDL_SetRenderDrawColor(rectangleRender->renderer, 255, 0, 127, SDL_ALPHA_OPAQUE);
+    for (size_t i=0; i<2; ++i) {
+        const NlGoal* goal = &constants->goals[i];
+        srRectsLineRect(rectangleRender, goal->rect.position.x, goal->rect.position.y, goal->rect.size.x, goal->rect.size.y);
+    }
+}
+
+static void renderBorders(SrRects* lineRender, const NlConstants* constants)
+{
+    SDL_SetRenderDrawColor(lineRender->renderer, 255, 240, 127, SDL_ALPHA_OPAQUE);
+    for (size_t i=0; i<sizeof(constants->borderSegments)/sizeof(constants->borderSegments[0]); ++i) {
+        const BlLineSegment * lineSegment = &constants->borderSegments[i];
+        srRectsDrawLine(lineRender, lineSegment->a.x, lineSegment->a.y, lineSegment->b.x, lineSegment->b.y);
+    }
 }
 
 static void renderCallback(void* _self, SrWindow* _)
@@ -62,6 +81,9 @@ static void renderCallback(void* _self, SrWindow* _)
     bl_vector2i ballRenderPos = simulationToRender(predicted->ball.circle.center);
     srSpritesCopyEx(&self->spriteRender, &self->ballSprite, ballRenderPos.x, ballRenderPos.y, 0,
                     1.0f);
+
+    renderGoals(&self->rectangleRender, &g_nlConstants);
+    renderBorders(&self->rectangleRender, &g_nlConstants);
 }
 
 void nlRenderUpdate(NlRender* self, const NlGame* authoritative, const NlGame* predicted)
