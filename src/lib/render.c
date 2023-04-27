@@ -2,6 +2,7 @@
  *  Copyright (c) Peter Bjorklund. All rights reserved.
  *  Licensed under the MIT License. See LICENSE in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
+#include "basal/vector2i.h"
 #include <SDL2_image/SDL_image.h>
 #include <nimble-ball-presentation/render.h>
 #include <nimble-ball-simulation/nimble_ball_simulation.h>
@@ -36,7 +37,7 @@ void nlRenderInit(NlRender* self)
     setupBallSprite(&self->ballSprite, equipmentTexture);
 }
 
-static bl_vector2i simulationToRender(bl_vector2 pos)
+static bl_vector2i simulationToRender(BlVector2 pos)
 {
     bl_vector2i result;
     result.x = pos.x / 1;
