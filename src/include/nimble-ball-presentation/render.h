@@ -28,6 +28,7 @@ typedef struct NlRender {
     const struct NlGame* authoritative;
     const struct NlGame* predicted;
     SrFont font;
+    SrFont bigFont;
     NlRenderStats stats;
 } NlRender;
 
