@@ -23,7 +23,7 @@ typedef struct NlRender {
     SrSprite arrowSprite;
     SrSprites spriteRender;
     SrRects rectangleRender;
-    SrWindow window;
+    SDL_Renderer* renderer;
     const struct NlGame* authoritative;
     const struct NlGame* predicted;
     const uint8_t* localParticipants;
@@ -33,7 +33,7 @@ typedef struct NlRender {
     NlRenderStats stats;
 } NlRender;
 
-void nlRenderInit(NlRender* self);
+void nlRenderInit(NlRender* self, SDL_Renderer* renderer);
 void nlRenderUpdate(NlRender* self, const struct NlGame* authoritative, const struct NlGame* predicted,
                     const uint8_t localParticipants[], size_t localParticipantCount, const NlRenderStats stats);
 void nlRenderClose(NlRender* self);
