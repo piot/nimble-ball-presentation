@@ -5,16 +5,14 @@
 #ifndef NIMBLE_BALL_RENDER_SDL_RENDER_H
 #define NIMBLE_BALL_RENDER_SDL_RENDER_H
 
-#include <sdl-render/sprite.h>
-#include <sdl-render/rect.h>
-#include <sdl-render/window.h>
 #include <sdl-render/font.h>
+#include <sdl-render/rect.h>
+#include <sdl-render/sprite.h>
+#include <sdl-render/window.h>
 
 struct NlGame;
 
-
-typedef struct NlRenderStats
-{
+typedef struct NlRenderStats {
     uint32_t predictedTickId;
     int authoritativeStepsInBuffer;
 } NlRenderStats;
@@ -22,19 +20,22 @@ typedef struct NlRenderStats
 typedef struct NlRender {
     SrSprite avatarSpriteForTeam[2];
     SrSprite ballSprite;
+    SrSprite arrowSprite;
     SrSprites spriteRender;
     SrRects rectangleRender;
     SrWindow window;
     const struct NlGame* authoritative;
     const struct NlGame* predicted;
+    const uint8_t* localParticipants;
+    size_t localParticipantCount;
     SrFont font;
     SrFont bigFont;
     NlRenderStats stats;
 } NlRender;
 
-
 void nlRenderInit(NlRender* self);
-void nlRenderUpdate(NlRender* self, const struct NlGame* authoritative, const struct NlGame* predicted, const NlRenderStats stats);
+void nlRenderUpdate(NlRender* self, const struct NlGame* authoritative, const struct NlGame* predicted,
+                    const uint8_t localParticipants[], size_t localParticipantCount, const NlRenderStats stats);
 void nlRenderClose(NlRender* self);
 
 #endif

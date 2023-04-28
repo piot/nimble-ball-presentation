@@ -53,11 +53,13 @@ int main(int argc, char* argv[])
     nlGameInit(&authoritative);
     nlGameInit(&predicted);
 
+    NlRenderStats stats = {0,0};
+
     int i = 0;
     while (1) {
         predicted.ball.circle.center.x = (float)i++;
         predicted.ball.circle.center.y = 20;
-        nlRenderUpdate(&render, &authoritative, &predicted);
+        nlRenderUpdate(&render, &authoritative, &predicted, 0, 0, stats);
         int wantsToQuit = checkSdlEvent();
         if (wantsToQuit) {
             break;

@@ -25,6 +25,15 @@ static void setupBallSprite(SrSprite* sprite, SDL_Texture* texture)
     sprite->texture = texture;
 }
 
+static void setupArrowSprite(SrSprite* sprite, SDL_Texture* texture)
+{
+    sprite->rect.x = 0;
+    sprite->rect.y = 0;
+    sprite->rect.w = 19;
+    sprite->rect.h = 15;
+    sprite->texture = texture;
+}
+
 void nlRenderInit(NlRender* self)
 {
     srWindowInit(&self->window, 640, 360, "nimble ball");
@@ -40,6 +49,7 @@ void nlRenderInit(NlRender* self)
     setupAvatarSprite(&self->avatarSpriteForTeam[0], avatarsTexture, 0);
     setupAvatarSprite(&self->avatarSpriteForTeam[1], avatarsTexture, 1);
     setupBallSprite(&self->ballSprite, equipmentTexture);
+    setupArrowSprite(&self->arrowSprite, equipmentTexture);
 }
 
 static bl_vector2i simulationToRender(BlVector2 pos)
@@ -228,6 +238,35 @@ static void renderBalls(NlRender* self, const NlGame* predicted)
     srSpritesCopyEx(&self->spriteRender, &self->ballSprite, ballRenderPos.x, ballRenderPos.y, 0, 1.0f);
 }
 
+static void renderLocalAvatarArrow(NlRender* self, const NlAvatar* avatar)
+{
+    int x = avatar->circle.center.x;
+    int y = avatar->circle.center.y + 26;
+
+    srSpritesCopyEx(&self->spriteRender, &self->arrowSprite, x, y, 0, 1.0f);
+}
+
+static void renderForLocalParticipants(NlRender* render, const NlGame* predicted)
+{
+    for (size_t i=0; i<render->localParticipantCount; ++i) {
+        uint8_t localParticipantIndex = render->localParticipants[i];
+        const NlParticipant* participant = &predicted->participantLookup[localParticipantIndex];
+        if (!participant->isUsed) {
+            // we haven't joined for some reason?
+        }
+
+        const NlPlayer* player = &predicted->players.players[participant->playerIndex];
+
+        int avatarIndex = player->controllingAvatarIndex;
+        if (avatarIndex == -1) {
+            continue;
+        }
+
+        const NlAvatar* avatar = &predicted->avatars.avatars[avatarIndex];
+        renderLocalAvatarArrow(render, avatar);
+    }
+}
+
 static void renderCallback(void* _self, SrWindow* _)
 {
     NlRender* self = (NlRender*) _self;
@@ -238,13 +277,19 @@ static void renderCallback(void* _self, SrWindow* _)
     renderGoals(&self->rectangleRender, &g_nlConstants);
     renderBorders(&self->rectangleRender, &g_nlConstants);
     renderHud(&self->font, &self->bigFont, self->authoritative, predicted);
+
+    renderForLocalParticipants(self, predicted);
+
     renderStats(self);
 }
 
-void nlRenderUpdate(NlRender* self, const NlGame* authoritative, const NlGame* predicted, NlRenderStats stats)
+void nlRenderUpdate(NlRender* self, const NlGame* authoritative, const NlGame* predicted,
+                    const uint8_t localParticipants[], size_t participantCount, NlRenderStats stats)
 {
     self->authoritative = authoritative;
     self->predicted = predicted;
+    self->localParticipants = localParticipants;
+    self->localParticipantCount = participantCount;
     self->stats = stats;
 
     srWindowRender(&self->window, 0x115511, self, renderCallback);

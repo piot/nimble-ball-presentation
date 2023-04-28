@@ -33,7 +33,8 @@ add_library(nimble_ball_render_sdl STATIC
 
 find_package(SDL2 REQUIRED COMPONENTS SDL2)
 find_package(SDL2_image REQUIRED COMPONENTS SDL2_image>=2.0.0)
-target_link_libraries(nimble_ball_render_sdl PUBLIC SDL2::SDL2 SDL2_image::SDL2_image)
+find_package(SDL2_ttf REQUIRED COMPONENTS SDL2_ttf>=2.0.0)
+target_link_libraries(nimble_ball_render_sdl PUBLIC SDL2::SDL2 SDL2_image::SDL2_image SDL2_ttf::SDL2_ttf)
 
 target_compile_options(nimble_ball_render_sdl PRIVATE -Wall -Wextra -Wshadow -Wstrict-aliasing -ansi -pedantic -Wno-declaration-after-statement -Wno-extra-semi-stmt -Wno-undef -Wno-unused-variable -Wno-unused-parameter -Wno-padded -Werror=implicit-function-declaration -Werror=incompatible-pointer-types  -Werror=missing-prototypes -Werror=int-conversion -Werror=return-type -Werror=incompatible-function-pointer-types) # -Werror=incompatible-pointer-types-discards-qualifiers
 if (COMPILER_CLANG)
