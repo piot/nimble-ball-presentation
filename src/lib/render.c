@@ -245,10 +245,10 @@ static void renderLocalAvatarArrow(NlRender* self, const NlAvatar* avatar)
     srSpritesCopyEx(&self->spriteRender, &self->arrowSprite, x, y, 0, 1.0f);
 }
 
-static void renderForLocalParticipants(NlRender* render, const NlGame* predicted)
+static void renderForLocalParticipants(NlRender* render, const NlGame* predicted, const uint8_t localParticipants[], size_t localParticipantCount)
 {
-    for (size_t i = 0; i < render->localParticipantCount; ++i) {
-        uint8_t localParticipantIndex = render->localParticipants[i];
+    for (size_t i = 0; i < localParticipantCount; ++i) {
+        uint8_t localParticipantIndex = localParticipants[i];
         const NlParticipant* participant = &predicted->participantLookup[localParticipantIndex];
         if (!participant->isUsed) {
             // we haven't joined for some reason?
@@ -269,19 +269,16 @@ static void renderForLocalParticipants(NlRender* render, const NlGame* predicted
 void nlRenderUpdate(NlRender* self, const NlGame* authoritative, const NlGame* predicted,
                     const uint8_t localParticipants[], size_t participantCount, NlRenderStats stats)
 {
-    self->authoritative = authoritative;
-    self->predicted = predicted;
-    self->localParticipants = localParticipants;
-    self->localParticipantCount = participantCount;
     self->stats = stats;
 
-    renderAvatars(self, predicted);
-    renderBalls(self, predicted);
+    const NlGame* mainGameStateToUse = predicted;
+
+    renderAvatars(self, mainGameStateToUse);
+    renderBalls(self, mainGameStateToUse);
     renderGoals(&self->rectangleRender, &g_nlConstants);
     renderBorders(&self->rectangleRender, &g_nlConstants);
-    renderHud(&self->font, &self->bigFont, self->authoritative, predicted);
-
-    renderForLocalParticipants(self, predicted);
+    renderHud(&self->font, &self->bigFont, authoritative, mainGameStateToUse);
+    renderForLocalParticipants(self, mainGameStateToUse, localParticipants, participantCount);
 
     renderStats(self);
 }

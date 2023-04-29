@@ -24,10 +24,6 @@ typedef struct NlRender {
     SrSprites spriteRender;
     SrRects rectangleRender;
     SDL_Renderer* renderer;
-    const struct NlGame* authoritative;
-    const struct NlGame* predicted;
-    const uint8_t* localParticipants;
-    size_t localParticipantCount;
     SrFont font;
     SrFont bigFont;
     NlRenderStats stats;
