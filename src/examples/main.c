@@ -45,7 +45,11 @@ int main(int argc, char* argv[])
 
     NlRender render;
 
-    nlRenderInit(&render);
+    SrWindow window;
+
+    srWindowInit(&window, 640, 360, "nimble ball presentation example");
+
+    nlRenderInit(&render, window.renderer);
 
     NlGame authoritative;
     NlGame predicted;
@@ -67,4 +71,6 @@ int main(int argc, char* argv[])
     }
 
     nlRenderClose(&render);
+
+    srWindowClose(&window);
 }
