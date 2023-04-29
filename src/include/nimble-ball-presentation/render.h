@@ -14,6 +14,7 @@ struct NlGame;
 
 typedef struct NlRenderStats {
     uint32_t predictedTickId;
+    uint32_t authoritativeTickId;
     int authoritativeStepsInBuffer;
 } NlRenderStats;
 
