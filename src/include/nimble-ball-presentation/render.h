@@ -18,6 +18,11 @@ typedef struct NlRenderStats {
     int authoritativeStepsInBuffer;
 } NlRenderStats;
 
+typedef enum NlRenderMode {
+    NlRenderModePredicted,
+    NlRenderModeAuthoritative,
+} NlRenderMode;
+
 typedef struct NlRender {
     SrSprite avatarSpriteForTeam[2];
     SrSprite ballSprite;
@@ -28,6 +33,7 @@ typedef struct NlRender {
     SrFont font;
     SrFont bigFont;
     NlRenderStats stats;
+    NlRenderMode mode;
 } NlRender;
 
 void nlRenderInit(NlRender* self, SDL_Renderer* renderer);

@@ -49,6 +49,7 @@ void nlRenderInit(NlRender* self, SDL_Renderer* renderer)
     setupAvatarSprite(&self->avatarSpriteForTeam[1], avatarsTexture, 1);
     setupBallSprite(&self->ballSprite, equipmentTexture);
     setupArrowSprite(&self->arrowSprite, equipmentTexture);
+    self->mode = NlRenderModePredicted;
 }
 
 static bl_vector2i simulationToRender(BlVector2 pos)
@@ -272,9 +273,18 @@ void nlRenderUpdate(NlRender* self, const NlGame* authoritative, const NlGame* p
     self->stats = stats;
 
     const NlGame* mainGameStateToUse = predicted;
+    const NlGame* alternativeGameState = authoritative;
+
+    if (self->mode == NlRenderModeAuthoritative) {
+        mainGameStateToUse = authoritative;
+        alternativeGameState = predicted;
+    }
 
     renderAvatars(self, mainGameStateToUse);
     renderBalls(self, mainGameStateToUse);
+
+    renderBalls(self, alternativeGameState);
+
     renderGoals(&self->rectangleRender, &g_nlConstants);
     renderBorders(&self->rectangleRender, &g_nlConstants);
     renderHud(&self->font, &self->bigFont, authoritative, mainGameStateToUse);
