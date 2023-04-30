@@ -221,21 +221,21 @@ static void renderStats(NlRender* self)
     srFontRenderAndCopy(&self->font, buf, 10, 359 - 6, color);
 }
 
-static void renderAvatars(NlRender* self, const NlGame* predicted)
+static void renderAvatars(NlRender* self, const NlGame* predicted, Uint8 alpha)
 {
     for (size_t i = 0; i < predicted->avatars.avatarCount; ++i) {
         const NlAvatar* avatar = &predicted->avatars.avatars[i];
         bl_vector2i avatarRenderPos = simulationToRender(avatar->circle.center);
         int degreesAngle = (int) (avatar->visualRotation * 360.0f / (M_PI * 2.0f));
         srSpritesCopyEx(&self->spriteRender, &self->avatarSpriteForTeam[avatar->teamIndex], avatarRenderPos.x,
-                        avatarRenderPos.y, degreesAngle, 1.0f);
+                        avatarRenderPos.y, degreesAngle, 1.0f, alpha);
     }
 }
 
-static void renderBalls(NlRender* self, const NlGame* predicted)
+static void renderBalls(NlRender* self, const NlGame* predicted, Uint8 alpha)
 {
     bl_vector2i ballRenderPos = simulationToRender(predicted->ball.circle.center);
-    srSpritesCopyEx(&self->spriteRender, &self->ballSprite, ballRenderPos.x, ballRenderPos.y, 0, 1.0f);
+    srSpritesCopyEx(&self->spriteRender, &self->ballSprite, ballRenderPos.x, ballRenderPos.y, 0, 1.0f, alpha);
 }
 
 static void renderLocalAvatarArrow(NlRender* self, const NlAvatar* avatar)
@@ -243,7 +243,7 @@ static void renderLocalAvatarArrow(NlRender* self, const NlAvatar* avatar)
     int x = avatar->circle.center.x;
     int y = avatar->circle.center.y + 26;
 
-    srSpritesCopyEx(&self->spriteRender, &self->arrowSprite, x, y, 0, 1.0f);
+    srSpritesCopyEx(&self->spriteRender, &self->arrowSprite, x, y, 0, 1.0f, 0xff);
 }
 
 static void renderForLocalParticipants(NlRender* render, const NlGame* predicted, const uint8_t localParticipants[], size_t localParticipantCount)
@@ -275,15 +275,18 @@ void nlRenderUpdate(NlRender* self, const NlGame* authoritative, const NlGame* p
     const NlGame* mainGameStateToUse = predicted;
     const NlGame* alternativeGameState = authoritative;
 
+    const Uint8 mainAlpha = 0xff;
+    const Uint8 alternativeAlpha = 0x55;
+
     if (self->mode == NlRenderModeAuthoritative) {
         mainGameStateToUse = authoritative;
         alternativeGameState = predicted;
     }
 
-    renderAvatars(self, mainGameStateToUse);
-    renderBalls(self, mainGameStateToUse);
-
-    renderBalls(self, alternativeGameState);
+    renderAvatars(self, mainGameStateToUse, mainAlpha);
+    renderAvatars(self, alternativeGameState, alternativeAlpha);
+    renderBalls(self, mainGameStateToUse, mainAlpha);
+    renderBalls(self, alternativeGameState, alternativeAlpha);
 
     renderGoals(&self->rectangleRender, &g_nlConstants);
     renderBorders(&self->rectangleRender, &g_nlConstants);
