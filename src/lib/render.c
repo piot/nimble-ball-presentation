@@ -276,17 +276,20 @@ void nlRenderUpdate(NlRender* self, const NlGame* authoritative, const NlGame* p
     const NlGame* alternativeGameState = authoritative;
 
     const Uint8 mainAlpha = 0xff;
-    const Uint8 alternativeAlpha = 0x55;
+    const Uint8 alternativeAlpha = 0x30;
 
     if (self->mode == NlRenderModeAuthoritative) {
         mainGameStateToUse = authoritative;
         alternativeGameState = predicted;
     }
 
-    renderAvatars(self, mainGameStateToUse, mainAlpha);
+    // Render alternative first, since it isn't as important
     renderAvatars(self, alternativeGameState, alternativeAlpha);
-    renderBalls(self, mainGameStateToUse, mainAlpha);
     renderBalls(self, alternativeGameState, alternativeAlpha);
+
+
+    renderAvatars(self, mainGameStateToUse, mainAlpha);
+    renderBalls(self, mainGameStateToUse, mainAlpha);
 
     renderGoals(&self->rectangleRender, &g_nlConstants);
     renderBorders(&self->rectangleRender, &g_nlConstants);
