@@ -216,7 +216,7 @@ static void renderStats(NlRender* self)
     const int borderSize = 22;
     srRectsFillRect(&self->rectangleRender, 0, 359 - borderSize, 640, borderSize);
     char buf[512];
-    tc_snprintf(buf, 512, "preId %04X autId %04X conBufCnt %d", self->stats.predictedTickId, self->stats.authoritativeTickId, self->stats.authoritativeStepsInBuffer);
+    tc_snprintf(buf, 512, "preId %04X autId %04X conBufCnt %d fps:%d", self->stats.predictedTickId, self->stats.authoritativeTickId, self->stats.authoritativeStepsInBuffer, self->stats.renderFps);
     SDL_Color color = {0xff, 0xff, 0xff, SDL_ALPHA_OPAQUE};
     srFontRenderAndCopy(&self->font, buf, 10, 359 - 6, color);
 }
