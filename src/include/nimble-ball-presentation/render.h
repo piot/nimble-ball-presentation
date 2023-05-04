@@ -5,6 +5,8 @@
 #ifndef NIMBLE_BALL_RENDER_SDL_RENDER_H
 #define NIMBLE_BALL_RENDER_SDL_RENDER_H
 
+#include <basal/vector2i.h>
+#include <nimble-ball-simulation/nimble_ball_simulation.h>
 #include <sdl-render/font.h>
 #include <sdl-render/rect.h>
 #include <sdl-render/sprite.h>
@@ -24,10 +26,43 @@ typedef enum NlRenderMode {
     NlRenderModeAuthoritative,
 } NlRenderMode;
 
+typedef struct NlrEntityInfo {
+    bool isUsed;
+} NlrEntityInfo;
+
+typedef struct NlrBall {
+    NlrEntityInfo info;
+    size_t spawnCountDown;
+    uint8_t simulationCollideCounter;
+    size_t lastCollisionCountDown;
+    bl_vector2i lastImpactPosition;
+} NlrBall;
+
+typedef struct NlrPlayer {
+    NlrEntityInfo info;
+    int countDown;
+} NlrPlayer;
+
+typedef struct NlrAvatar {
+    NlrEntityInfo info;
+    size_t spawnCountDown;
+    bl_vector2i lastPosition;
+    BlVector2 precisionPosition;
+    float rotation;
+} NlrAvatar;
+
 typedef struct NlRender {
     SrSprite avatarSpriteForTeam[2];
-    SrSprite ballSprite;
+    NlrBall ball;
+    NlrBall shadowBall;
+
     SrSprite arrowSprite;
+    SrSprite ballSprite;
+
+    NlrPlayer players[NL_MAX_PLAYERS];
+    NlrAvatar avatars[NL_MAX_PLAYERS];
+    NlrAvatar shadowAvatars[NL_MAX_PLAYERS];
+
     SrSprites spriteRender;
     SrRects rectangleRender;
     SDL_Renderer* renderer;

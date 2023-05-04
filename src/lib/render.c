@@ -43,6 +43,18 @@ void nlRenderInit(NlRender* self, SDL_Renderer* renderer)
     srFontInit(&self->font, self->renderer, "data/mouldy.ttf", 10);
     srFontInit(&self->bigFont, self->renderer, "data/mouldy.ttf", 22);
 
+    for (size_t i = 0u; i < NL_MAX_PLAYERS; ++i) {
+        self->players[i].info.isUsed = false;
+    }
+
+    for (size_t i = 0u; i < NL_MAX_PLAYERS; ++i) {
+        self->avatars[i].info.isUsed = false;
+        self->shadowAvatars[i].info.isUsed = false;
+    }
+
+    self->ball.info.isUsed = false;
+    self->shadowBall.info.isUsed = false;
+
     srSpritesInit(&self->spriteRender, self->renderer);
     srRectsInit(&self->rectangleRender, self->renderer);
     setupAvatarSprite(&self->avatarSpriteForTeam[0], avatarsTexture, 0);
@@ -216,26 +228,99 @@ static void renderStats(NlRender* self)
     const int borderSize = 22;
     srRectsFillRect(&self->rectangleRender, 0, 359 - borderSize, 640, borderSize);
     char buf[512];
-    tc_snprintf(buf, 512, "preId %04X autId %04X conBufCnt %d fps:%d", self->stats.predictedTickId, self->stats.authoritativeTickId, self->stats.authoritativeStepsInBuffer, self->stats.renderFps);
+    tc_snprintf(buf, 512, "preId %04X autId %04X conBufCnt %d fps:%d", self->stats.predictedTickId,
+                self->stats.authoritativeTickId, self->stats.authoritativeStepsInBuffer, self->stats.renderFps);
     SDL_Color color = {0xff, 0xff, 0xff, SDL_ALPHA_OPAQUE};
     srFontRenderAndCopy(&self->font, buf, 10, 359 - 6, color);
 }
 
-static void renderAvatars(NlRender* self, const NlGame* predicted, Uint8 alpha)
+#include <basal/math.h>
+
+static void renderAvatar(NlRender* self, NlrAvatar* renderAvatar, const NlAvatar* avatar, Uint8 alpha)
 {
-    for (size_t i = 0; i < predicted->avatars.avatarCount; ++i) {
-        const NlAvatar* avatar = &predicted->avatars.avatars[i];
-        bl_vector2i avatarRenderPos = simulationToRender(avatar->circle.center);
-        int degreesAngle = (int) (avatar->visualRotation * 360.0f / (M_PI * 2.0f));
-        srSpritesCopyEx(&self->spriteRender, &self->avatarSpriteForTeam[avatar->teamIndex], avatarRenderPos.x,
-                        avatarRenderPos.y, degreesAngle, 1.0f, alpha);
+    const size_t avatarSpawnTime = 60u;
+    if (!renderAvatar->info.isUsed) {
+        renderAvatar->info.isUsed = true;
+        renderAvatar->spawnCountDown = avatarSpawnTime;
+        renderAvatar->precisionPosition = avatar->circle.center;
+        renderAvatar->rotation = avatar->visualRotation;
+    }
+
+    BlVector2 targetPosition = avatar->circle.center;
+
+    BlVector2 delta = blVector2Sub(targetPosition, renderAvatar->precisionPosition);
+    renderAvatar->precisionPosition = blVector2AddScale(renderAvatar->precisionPosition, delta, 0.2f);
+
+    float angleDiff = avatar->visualRotation - renderAvatar->rotation;
+
+    const float maxRadianDiffPerTime = 0.1f;
+    float diffThisTick = blFabs(angleDiff) > maxRadianDiffPerTime ? blFSign(angleDiff) * maxRadianDiffPerTime
+                                                                  : angleDiff;
+    renderAvatar->rotation += diffThisTick;
+
+    if (renderAvatar->spawnCountDown > 0u) {
+        renderAvatar->spawnCountDown--;
+    }
+
+    float scale = renderAvatar->spawnCountDown > 0u ? 1.0f - renderAvatar->spawnCountDown / (float) avatarSpawnTime
+                                                    : 1.0f;
+
+    bl_vector2i avatarRenderPos = simulationToRender(renderAvatar->precisionPosition);
+    int degreesAngle = (int) (renderAvatar->rotation * 360.0f / (M_PI * 2.0f));
+
+    srSpritesCopyEx(&self->spriteRender, &self->avatarSpriteForTeam[avatar->teamIndex], avatarRenderPos.x,
+                    avatarRenderPos.y, degreesAngle, scale, alpha);
+}
+
+static void renderAvatars(NlRender* self, NlrAvatar* nlrAvatars, const NlAvatars* avatars, Uint8 alpha)
+{
+    for (size_t i = 0u; i < avatars->avatarCount; ++i) {
+        const NlAvatar* avatar = &avatars->avatars[i];
+        NlrAvatar* nlrAvatar = &nlrAvatars[i];
+        renderAvatar(self, nlrAvatar, avatar, alpha);
+    }
+}
+
+static void renderBall(NlRender* self, NlrBall* renderBall, const NlBall* ball, Uint8 alpha)
+{
+    if (!renderBall->info.isUsed) {
+        renderBall->info.isUsed = true;
+        renderBall->spawnCountDown = 60u;
+        renderBall->simulationCollideCounter = ball->collideCounter;
+    }
+    bl_vector2i ballRenderPos = simulationToRender(ball->circle.center);
+
+    if (renderBall->spawnCountDown > 0) {
+        renderBall->spawnCountDown--;
+    }
+    const size_t impactTime = 12u;
+    if (ball->collideCounter != renderBall->simulationCollideCounter) {
+        renderBall->simulationCollideCounter = ball->collideCounter;
+        renderBall->lastCollisionCountDown = impactTime;
+        renderBall->lastImpactPosition = ballRenderPos;
+    }
+
+    float scale = renderBall->spawnCountDown > 0u ? 1.0f - renderBall->spawnCountDown / 60.0f : 1.0f;
+
+    srSpritesCopyEx(&self->spriteRender, &self->ballSprite, ballRenderPos.x, ballRenderPos.y, 0, scale, alpha);
+
+    if (renderBall->lastCollisionCountDown > 0u && alpha == SDL_ALPHA_OPAQUE) {
+        renderBall->lastCollisionCountDown--;
+        SrSprite ballCollideSprite = self->ballSprite;
+        float normalizedTime = 1.0f - renderBall->lastCollisionCountDown / (float) impactTime;
+        int spriteSheetIndex = normalizedTime * 2.9f;
+        ballCollideSprite.rect.x = (spriteSheetIndex + 2) * 16;
+        ballCollideSprite.rect.y = 0;
+        ballCollideSprite.rect.w = 16;
+        ballCollideSprite.rect.h = 16;
+        srSpritesCopyEx(&self->spriteRender, &ballCollideSprite, renderBall->lastImpactPosition.x,
+                        renderBall->lastImpactPosition.y, 0, 1.0f, 0xff);
     }
 }
 
 static void renderBalls(NlRender* self, const NlGame* predicted, Uint8 alpha)
 {
-    bl_vector2i ballRenderPos = simulationToRender(predicted->ball.circle.center);
-    srSpritesCopyEx(&self->spriteRender, &self->ballSprite, ballRenderPos.x, ballRenderPos.y, 0, 1.0f, alpha);
+    renderBall(self, &self->ball, &predicted->ball, alpha);
 }
 
 static void renderLocalAvatarArrow(NlRender* self, const NlAvatar* avatar)
@@ -246,7 +331,8 @@ static void renderLocalAvatarArrow(NlRender* self, const NlAvatar* avatar)
     srSpritesCopyEx(&self->spriteRender, &self->arrowSprite, x, y, 0, 1.0f, 0xff);
 }
 
-static void renderForLocalParticipants(NlRender* render, const NlGame* predicted, const uint8_t localParticipants[], size_t localParticipantCount)
+static void renderForLocalParticipants(NlRender* render, const NlGame* predicted, const uint8_t localParticipants[],
+                                       size_t localParticipantCount)
 {
     for (size_t i = 0; i < localParticipantCount; ++i) {
         uint8_t localParticipantIndex = localParticipants[i];
@@ -267,6 +353,31 @@ static void renderForLocalParticipants(NlRender* render, const NlGame* predicted
     }
 }
 
+static void renderPlayer(NlRender* render, NlrPlayer* renderPlayer, const NlPlayer* player)
+{
+    if (!renderPlayer->info.isUsed) {
+        renderPlayer->info.isUsed = true;
+        renderPlayer->countDown = 120;
+    }
+
+    if (renderPlayer->countDown > 0) {
+        renderPlayer->countDown--;
+
+        SDL_Color playerJoinedColor = getTeamColor(player->preferredTeamId);
+        char buf[32];
+        tc_snprintf(buf, 32, "player %d joined", player->playerIndex);
+        srFontRenderAndCopy(&render->font, buf, 14, 15, playerJoinedColor);
+    }
+}
+
+static void renderPlayers(NlRender* render, const NlPlayers* players)
+{
+    for (size_t i = 0u; i < players->playerCount; ++i) {
+        const NlPlayer* player = &players->players[i];
+        renderPlayer(render, &render->players[i], player);
+    }
+}
+
 void nlRenderUpdate(NlRender* self, const NlGame* authoritative, const NlGame* predicted,
                     const uint8_t localParticipants[], size_t participantCount, NlRenderStats stats)
 {
@@ -284,11 +395,13 @@ void nlRenderUpdate(NlRender* self, const NlGame* authoritative, const NlGame* p
     }
 
     // Render alternative first, since it isn't as important
-    renderAvatars(self, alternativeGameState, alternativeAlpha);
-    renderBalls(self, alternativeGameState, alternativeAlpha);
+    renderAvatars(self, self->shadowAvatars, &alternativeGameState->avatars, alternativeAlpha);
+    renderBall(self, &self->shadowBall, &alternativeGameState->ball, alternativeAlpha);
 
+    // ------------------------------
 
-    renderAvatars(self, mainGameStateToUse, mainAlpha);
+    renderPlayers(self, &mainGameStateToUse->players);
+    renderAvatars(self, self->avatars, &mainGameStateToUse->avatars, mainAlpha);
     renderBalls(self, mainGameStateToUse, mainAlpha);
 
     renderGoals(&self->rectangleRender, &g_nlConstants);
