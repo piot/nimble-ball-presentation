@@ -37,6 +37,7 @@ typedef struct NlrBall {
     uint8_t simulationCollideCounter;
     size_t lastCollisionCountDown;
     BlVector2i lastImpactPosition;
+    BlVector2 precisionPosition;
 } NlrBall;
 
 typedef struct NlrPlayer {

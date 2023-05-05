@@ -5,7 +5,6 @@
 #include "basal/vector2i.h"
 #include <SDL2_image/SDL_image.h>
 #include <nimble-ball-presentation/render.h>
-#include <nimble-ball-simulation/nimble_ball_simulation.h>
 
 static void setupAvatarSprite(SrSprite* sprite, SDL_Texture* texture, int cellIndex)
 {
@@ -236,6 +235,8 @@ static void renderStats(NlRender* self)
 
 #include <basal/math.h>
 
+const float lerpFactor = 0.6f;
+
 static void renderAvatar(NlRender* self, NlrAvatar* renderAvatar, const NlAvatar* avatar, Uint8 alpha)
 {
     const size_t avatarSpawnTime = 60u;
@@ -249,7 +250,7 @@ static void renderAvatar(NlRender* self, NlrAvatar* renderAvatar, const NlAvatar
     BlVector2 targetPosition = avatar->circle.center;
 
     BlVector2 delta = blVector2Sub(targetPosition, renderAvatar->precisionPosition);
-    renderAvatar->precisionPosition = blVector2AddScale(renderAvatar->precisionPosition, delta, 0.2f);
+    renderAvatar->precisionPosition = blVector2AddScale(renderAvatar->precisionPosition, delta, lerpFactor);
 
     float angleDiff = avatar->visualRotation - renderAvatar->rotation;
 
@@ -281,40 +282,45 @@ static void renderAvatars(NlRender* self, NlrAvatar* nlrAvatars, const NlAvatars
     }
 }
 
-static void renderBall(NlRender* self, NlrBall* renderBall, const NlBall* ball, Uint8 alpha)
+static void renderBall(NlRender* self, NlrBall* nlrBall, const NlBall* ball, Uint8 alpha)
 {
-    if (!renderBall->info.isUsed) {
-        renderBall->info.isUsed = true;
-        renderBall->spawnCountDown = 60u;
-        renderBall->simulationCollideCounter = ball->collideCounter;
+    if (!nlrBall->info.isUsed) {
+        nlrBall->info.isUsed = true;
+        nlrBall->spawnCountDown = 60u;
+        nlrBall->simulationCollideCounter = ball->collideCounter;
+        nlrBall->precisionPosition = ball->circle.center;
     }
-    BlVector2i ballRenderPos = simulationToRender(ball->circle.center);
+    BlVector2 ballRenderTargetPos = ball->circle.center;
 
-    if (renderBall->spawnCountDown > 0) {
-        renderBall->spawnCountDown--;
+    if (nlrBall->spawnCountDown > 0) {
+        nlrBall->spawnCountDown--;
     }
     const size_t impactTime = 12u;
-    if (ball->collideCounter != renderBall->simulationCollideCounter) {
-        renderBall->simulationCollideCounter = ball->collideCounter;
-        renderBall->lastCollisionCountDown = impactTime;
-        renderBall->lastImpactPosition = ballRenderPos;
+    if (ball->collideCounter != nlrBall->simulationCollideCounter) {
+        nlrBall->simulationCollideCounter = ball->collideCounter;
+        nlrBall->lastCollisionCountDown = impactTime;
+        nlrBall->lastImpactPosition.x = ballRenderTargetPos.x;
+        nlrBall->lastImpactPosition.y = ballRenderTargetPos.y;
     }
 
-    float scale = renderBall->spawnCountDown > 0u ? 1.0f - renderBall->spawnCountDown / 60.0f : 1.0f;
+    BlVector2 delta = blVector2Sub(ballRenderTargetPos, nlrBall->precisionPosition);
+    nlrBall->precisionPosition = blVector2AddScale(nlrBall->precisionPosition, delta, lerpFactor);
 
-    srSpritesCopyEx(&self->spriteRender, &self->ballSprite, ballRenderPos.x, ballRenderPos.y, 0, scale, alpha);
+    float scale = nlrBall->spawnCountDown > 0u ? 1.0f - nlrBall->spawnCountDown / 60.0f : 1.0f;
 
-    if (renderBall->lastCollisionCountDown > 0u && alpha == SDL_ALPHA_OPAQUE) {
-        renderBall->lastCollisionCountDown--;
+    srSpritesCopyEx(&self->spriteRender, &self->ballSprite, nlrBall->precisionPosition.x, nlrBall->precisionPosition.y, 0, scale, alpha);
+
+    if (nlrBall->lastCollisionCountDown > 0u && alpha == SDL_ALPHA_OPAQUE) {
+        nlrBall->lastCollisionCountDown--;
         SrSprite ballCollideSprite = self->ballSprite;
-        float normalizedTime = 1.0f - renderBall->lastCollisionCountDown / (float) impactTime;
+        float normalizedTime = 1.0f - nlrBall->lastCollisionCountDown / (float) impactTime;
         int spriteSheetIndex = normalizedTime * 2.9f;
         ballCollideSprite.rect.x = (spriteSheetIndex + 2) * 16;
         ballCollideSprite.rect.y = 0;
         ballCollideSprite.rect.w = 16;
         ballCollideSprite.rect.h = 16;
-        srSpritesCopyEx(&self->spriteRender, &ballCollideSprite, renderBall->lastImpactPosition.x,
-                        renderBall->lastImpactPosition.y, 0, 1.0f, 0xff);
+        srSpritesCopyEx(&self->spriteRender, &ballCollideSprite, nlrBall->lastImpactPosition.x,
+                        nlrBall->lastImpactPosition.y, 0, 1.0f, 0xff);
     }
 }
 
