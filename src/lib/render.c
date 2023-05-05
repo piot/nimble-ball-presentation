@@ -252,7 +252,7 @@ static void renderAvatar(NlRender* self, NlrAvatar* renderAvatar, const NlAvatar
     BlVector2 delta = blVector2Sub(targetPosition, renderAvatar->precisionPosition);
     renderAvatar->precisionPosition = blVector2AddScale(renderAvatar->precisionPosition, delta, lerpFactor);
 
-    float angleDiff = avatar->visualRotation - renderAvatar->rotation;
+    float angleDiff = blAngleMinimalDiff(avatar->visualRotation, renderAvatar->rotation);
 
     const float maxRadianDiffPerTime = 0.1f;
     float diffThisTick = blFabs(angleDiff) > maxRadianDiffPerTime ? blFSign(angleDiff) * maxRadianDiffPerTime
