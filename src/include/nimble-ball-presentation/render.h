@@ -19,6 +19,7 @@ typedef struct NlRenderStats {
     uint32_t authoritativeTickId;
     int authoritativeStepsInBuffer;
     int renderFps;
+    int latencyMs;
 } NlRenderStats;
 
 typedef enum NlRenderMode {
