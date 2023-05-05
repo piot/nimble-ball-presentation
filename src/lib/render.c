@@ -64,9 +64,9 @@ void nlRenderInit(NlRender* self, SDL_Renderer* renderer)
     self->mode = NlRenderModePredicted;
 }
 
-static bl_vector2i simulationToRender(BlVector2 pos)
+static BlVector2i simulationToRender(BlVector2 pos)
 {
-    bl_vector2i result;
+    BlVector2i result;
     result.x = pos.x;
     result.y = pos.y;
 
@@ -265,7 +265,7 @@ static void renderAvatar(NlRender* self, NlrAvatar* renderAvatar, const NlAvatar
     float scale = renderAvatar->spawnCountDown > 0u ? 1.0f - renderAvatar->spawnCountDown / (float) avatarSpawnTime
                                                     : 1.0f;
 
-    bl_vector2i avatarRenderPos = simulationToRender(renderAvatar->precisionPosition);
+    BlVector2i avatarRenderPos = simulationToRender(renderAvatar->precisionPosition);
     int degreesAngle = (int) (renderAvatar->rotation * 360.0f / (M_PI * 2.0f));
 
     srSpritesCopyEx(&self->spriteRender, &self->avatarSpriteForTeam[avatar->teamIndex], avatarRenderPos.x,
@@ -288,7 +288,7 @@ static void renderBall(NlRender* self, NlrBall* renderBall, const NlBall* ball, 
         renderBall->spawnCountDown = 60u;
         renderBall->simulationCollideCounter = ball->collideCounter;
     }
-    bl_vector2i ballRenderPos = simulationToRender(ball->circle.center);
+    BlVector2i ballRenderPos = simulationToRender(ball->circle.center);
 
     if (renderBall->spawnCountDown > 0) {
         renderBall->spawnCountDown--;

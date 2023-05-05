@@ -35,7 +35,7 @@ typedef struct NlrBall {
     size_t spawnCountDown;
     uint8_t simulationCollideCounter;
     size_t lastCollisionCountDown;
-    bl_vector2i lastImpactPosition;
+    BlVector2i lastImpactPosition;
 } NlrBall;
 
 typedef struct NlrPlayer {
@@ -46,7 +46,7 @@ typedef struct NlrPlayer {
 typedef struct NlrAvatar {
     NlrEntityInfo info;
     size_t spawnCountDown;
-    bl_vector2i lastPosition;
+    BlVector2i lastPosition;
     BlVector2 precisionPosition;
     float rotation;
 } NlrAvatar;
