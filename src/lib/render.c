@@ -8,7 +8,7 @@
 
 static void setupAvatarSprite(SrSprite* sprite, SDL_Texture* texture, int cellIndex)
 {
-    sprite->rect.x = 0 + cellIndex * 21;
+    sprite->rect.x = 0 + cellIndex * 48;
     sprite->rect.y = 0;
     sprite->rect.w = 21;
     sprite->rect.h = 31;
@@ -228,7 +228,8 @@ static void renderStats(NlRender* self)
     srRectsFillRect(&self->rectangleRender, 0, 359 - borderSize, 640, borderSize);
     char buf[512];
     tc_snprintf(buf, 512, "preId %04X autId %04X conBufCnt %d fps:%d latency:%d", self->stats.predictedTickId,
-                self->stats.authoritativeTickId, self->stats.authoritativeStepsInBuffer, self->stats.renderFps, self->stats.latencyMs);
+                self->stats.authoritativeTickId, self->stats.authoritativeStepsInBuffer, self->stats.renderFps,
+                self->stats.latencyMs);
     SDL_Color color = {0xff, 0xff, 0xff, SDL_ALPHA_OPAQUE};
     srFontRenderAndCopy(&self->font, buf, 10, 359 - 6, color);
 }
@@ -308,7 +309,8 @@ static void renderBall(NlRender* self, NlrBall* nlrBall, const NlBall* ball, Uin
 
     float scale = nlrBall->spawnCountDown > 0u ? 1.0f - nlrBall->spawnCountDown / 60.0f : 1.0f;
 
-    srSpritesCopyEx(&self->spriteRender, &self->ballSprite, nlrBall->precisionPosition.x, nlrBall->precisionPosition.y, 0, scale, alpha);
+    srSpritesCopyEx(&self->spriteRender, &self->ballSprite, nlrBall->precisionPosition.x, nlrBall->precisionPosition.y,
+                    0, scale, alpha);
 
     if (nlrBall->lastCollisionCountDown > 0u && alpha == SDL_ALPHA_OPAQUE) {
         nlrBall->lastCollisionCountDown--;
