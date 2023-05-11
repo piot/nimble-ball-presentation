@@ -16,7 +16,9 @@ typedef struct NlAudioAvatar {
 } NlAudioAvatar;
 
 typedef struct NlAudio {
-   SrSample countDown;
+   SrSample countDown[4];
+   SrSample ballKick;
+   SrSample ballBounce;
    int lastPlayedCountdown;
    NlAudioAvatar avatars[10];
    NlAudioBall ball;
