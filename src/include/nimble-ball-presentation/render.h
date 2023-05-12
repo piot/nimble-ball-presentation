@@ -8,11 +8,14 @@
 #include <basal/vector2i.h>
 #include <nimble-ball-simulation/nimble_ball_simulation.h>
 #include <sdl-render/font.h>
+#include <sdl-render/gamepad.h>
 #include <sdl-render/rect.h>
 #include <sdl-render/sprite.h>
 #include <sdl-render/window.h>
 
 struct NlGame;
+
+#define NLR_MAX_LOCAL_PLAYERS (4)
 
 typedef struct NlRenderStats {
     uint32_t predictedTickId;
@@ -45,6 +48,15 @@ typedef struct NlrPlayer {
     int countDown;
 } NlrPlayer;
 
+typedef struct NlrLocalPlayer {
+    NlrEntityInfo info;
+    uint8_t participantId;
+    SrGamepad gamepad;
+    SrGamepad previousGamepad;
+    int highlightedTeamIndex;
+    int selectedTeamIndex;
+} NlrLocalPlayer;
+
 typedef struct NlrAvatar {
     NlrEntityInfo info;
     size_t spawnCountDown;
@@ -60,10 +72,12 @@ typedef struct NlRender {
 
     SrSprite arrowSprite;
     SrSprite ballSprite;
+    SrSprite jerseySprite[2];
 
     NlrPlayer players[NL_MAX_PLAYERS];
     NlrAvatar avatars[NL_MAX_PLAYERS];
     NlrAvatar shadowAvatars[NL_MAX_PLAYERS];
+    NlrLocalPlayer localPlayers[NLR_MAX_LOCAL_PLAYERS];
 
     SrSprites spriteRender;
     SrRects rectangleRender;
@@ -75,8 +89,12 @@ typedef struct NlRender {
 } NlRender;
 
 void nlRenderInit(NlRender* self, SDL_Renderer* renderer);
+void nlRenderFeedInput(NlRender* self, SrGamepad* gamepads, const NlGame* predicted, const uint8_t localParticipants[],
+                       size_t localParticipantCount);
 void nlRenderUpdate(NlRender* self, const struct NlGame* authoritative, const struct NlGame* predicted,
                     const uint8_t localParticipants[], size_t localParticipantCount, const NlRenderStats stats);
+
+NlrLocalPlayer* nlRenderFindLocalPlayerFromParticipantId(NlRender* self, uint8_t participantId);
 void nlRenderClose(NlRender* self);
 
 #endif

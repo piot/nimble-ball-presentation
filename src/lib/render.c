@@ -33,6 +33,15 @@ static void setupArrowSprite(SrSprite* sprite, SDL_Texture* texture)
     sprite->texture = texture;
 }
 
+static void setupJerseySprite(SrSprite* sprite, SDL_Texture* texture, int teamIndex)
+{
+    sprite->rect.x = 2 + teamIndex * 32;
+    sprite->rect.y = 37;
+    sprite->rect.w = 28;
+    sprite->rect.h = 22;
+    sprite->texture = texture;
+}
+
 void nlRenderInit(NlRender* self, SDL_Renderer* renderer)
 {
     self->renderer = renderer;
@@ -60,6 +69,8 @@ void nlRenderInit(NlRender* self, SDL_Renderer* renderer)
     setupAvatarSprite(&self->avatarSpriteForTeam[1], avatarsTexture, 1);
     setupBallSprite(&self->ballSprite, equipmentTexture);
     setupArrowSprite(&self->arrowSprite, equipmentTexture);
+    setupJerseySprite(&self->jerseySprite[0], equipmentTexture, 0);
+    setupJerseySprite(&self->jerseySprite[1], equipmentTexture, 1);
     self->mode = NlRenderModePredicted;
 }
 
@@ -339,6 +350,58 @@ static void renderLocalAvatarArrow(NlRender* self, const NlAvatar* avatar)
     srSpritesCopyEx(&self->spriteRender, &self->arrowSprite, x, y, 0, 1.0f, 0xff);
 }
 
+static void renderMenus(NlRender* render, const SrFont* font, const SrFont* bigFont, const NlGame* predicted,
+                        const NlPlayer* player, NlrLocalPlayer* renderPlayer)
+{
+    switch (player->phase) {
+        case NlPlayerPhaseSelectTeam: {
+            int backgroundY = 100;
+            int backgroundX = 100;
+            SDL_Color backgroundColor = {0x33, 0x33, 0x33, 0xcc};
+            SDL_SetRenderDrawColor(render->renderer, backgroundColor.r, backgroundColor.g, backgroundColor.b,
+                                   backgroundColor.a);
+
+            srRectsFillRect(&render->rectangleRender, backgroundX, backgroundY, 400, 200);
+            SDL_Color secondsColor = {0xff, 0xff, 0xff, SDL_ALPHA_OPAQUE};
+            srFontRenderAndCopy(font, "SELECT YOUR TEAM!", 200, 280, secondsColor);
+            int jerseyY = 200;
+            const float selectedScale = 4.0f;
+            const float notSelectedScale = 3.0;
+            srSpritesCopyEx(&render->spriteRender, &render->jerseySprite[0], 240, jerseyY, 0,
+                            renderPlayer->highlightedTeamIndex == 0 ? selectedScale : notSelectedScale, 0xff);
+            srSpritesCopyEx(&render->spriteRender, &render->jerseySprite[1], 400, jerseyY, 0,
+                            renderPlayer->highlightedTeamIndex == 1 ? selectedScale : notSelectedScale, 0xff);
+        } break;
+        case NlPlayerPhaseCommittedToTeam: {
+            int backgroundY = 100;
+            int backgroundX = 100;
+            SDL_Color backgroundColor = {0x33, 0x33, 0x33, 0xcc};
+            SDL_SetRenderDrawColor(render->renderer, backgroundColor.r, backgroundColor.g, backgroundColor.b,
+                                   backgroundColor.a);
+            srRectsFillRect(&render->rectangleRender, backgroundX, backgroundY, 400, 200);
+            SDL_Color secondsColor = {0xff, 0xff, 0xff, SDL_ALPHA_OPAQUE};
+            srFontRenderAndCopy(font, "Team selected. Waiting for Countdown", 30, 280, secondsColor);
+        } break;
+        case NlPlayerPhasePlaying:
+
+            break;
+    }
+}
+
+NlrLocalPlayer* nlRenderFindLocalPlayerFromParticipantId(NlRender* self, uint8_t participantId)
+{
+    for (size_t i = 0; i < NLR_MAX_LOCAL_PLAYERS; ++i) {
+        NlrLocalPlayer* renderPlayer = &self->localPlayers[i];
+        if (!renderPlayer->info.isUsed) {
+            continue;
+        }
+        if (renderPlayer->participantId == participantId) {
+            return renderPlayer;
+        }
+    }
+    return 0;
+}
+
 static void renderForLocalParticipants(NlRender* render, const NlGame* predicted, const uint8_t localParticipants[],
                                        size_t localParticipantCount)
 {
@@ -350,9 +413,11 @@ static void renderForLocalParticipants(NlRender* render, const NlGame* predicted
         }
 
         const NlPlayer* player = &predicted->players.players[participant->playerIndex];
+        NlrLocalPlayer* renderPlayer = nlRenderFindLocalPlayerFromParticipantId(render, localParticipantIndex);
+        renderMenus(render, &render->font, &render->bigFont, predicted, player, renderPlayer);
 
-        int avatarIndex = player->controllingAvatarIndex;
-        if (avatarIndex == -1) {
+        uint8_t avatarIndex = player->controllingAvatarIndex;
+        if (avatarIndex == NL_AVATAR_INDEX_UNDEFINED) {
             continue;
         }
 
@@ -365,7 +430,8 @@ static void renderPlayer(NlRender* render, NlrPlayer* renderPlayer, const NlPlay
 {
     if (!renderPlayer->info.isUsed) {
         renderPlayer->info.isUsed = true;
-        renderPlayer->countDown = 120;
+        renderPlayer->countDown = 180;
+        // renderPlayer->participantId = player->assignedToParticipantIndex;
     }
 
     if (renderPlayer->countDown > 0) {
@@ -386,6 +452,38 @@ static void renderPlayers(NlRender* render, const NlPlayers* players)
     }
 }
 
+static NlrLocalPlayer* findFreeRenderLocalPlayer(NlRender* self)
+{
+    for (size_t i = 0; i < NLR_MAX_LOCAL_PLAYERS; ++i) {
+        NlrLocalPlayer* foundPlayer = &self->localPlayers[i];
+        if (!foundPlayer->info.isUsed) {
+            return foundPlayer;
+        }
+    }
+
+    return NULL;
+}
+
+static void spawnLocalPlayersIfNeeded(NlRender* self, const uint8_t localParticipants[], size_t participantCount)
+{
+    if (participantCount > NLR_MAX_LOCAL_PLAYERS) {
+        CLOG_ERROR("can not continue, participant count is wrong")
+    }
+    for (size_t i = 0; i < participantCount; ++i) {
+        uint8_t localParticipantId = localParticipants[i];
+        NlrLocalPlayer* foundPlayer = nlRenderFindLocalPlayerFromParticipantId(self, localParticipantId);
+        if (foundPlayer == NULL) {
+            foundPlayer = findFreeRenderLocalPlayer(self);
+            foundPlayer->info.isUsed = true;
+            foundPlayer->participantId = localParticipantId;
+            foundPlayer->selectedTeamIndex = NL_TEAM_UNDEFINED;
+            foundPlayer->highlightedTeamIndex = 0;
+            srGamepadInit(&foundPlayer->previousGamepad);
+            srGamepadInit(&foundPlayer->gamepad);
+        }
+    }
+}
+
 void nlRenderUpdate(NlRender* self, const NlGame* authoritative, const NlGame* predicted,
                     const uint8_t localParticipants[], size_t participantCount, NlRenderStats stats)
 {
@@ -396,6 +494,8 @@ void nlRenderUpdate(NlRender* self, const NlGame* authoritative, const NlGame* p
 
     const Uint8 mainAlpha = 0xff;
     const Uint8 alternativeAlpha = 0x30;
+
+    spawnLocalPlayersIfNeeded(self, localParticipants, participantCount);
 
     if (self->mode == NlRenderModeAuthoritative) {
         mainGameStateToUse = authoritative;
@@ -418,6 +518,46 @@ void nlRenderUpdate(NlRender* self, const NlGame* authoritative, const NlGame* p
     renderForLocalParticipants(self, mainGameStateToUse, localParticipants, participantCount);
 
     renderStats(self);
+}
+
+static void teamSelection(NlrLocalPlayer* renderLocalPlayer, int horizontal)
+{
+    if (horizontal > 0) {
+        renderLocalPlayer->highlightedTeamIndex = 1;
+    } else if (horizontal < 0) {
+        renderLocalPlayer->highlightedTeamIndex = 0;
+    }
+}
+
+static void updateInput(NlrLocalPlayer* renderPlayer, const SrGamepad* gamepad, const NlPlayer* predictedPlayer)
+{
+    renderPlayer->gamepad = *gamepad;
+    switch (predictedPlayer->phase) {
+        case NlPlayerPhaseSelectTeam:
+            if (renderPlayer->selectedTeamIndex == NL_TEAM_UNDEFINED) {
+                if (renderPlayer->previousGamepad.horizontalAxis == 0 && renderPlayer->gamepad.horizontalAxis != 0) {
+                    teamSelection(renderPlayer, renderPlayer->gamepad.horizontalAxis);
+                }
+                if (renderPlayer->gamepad.a == 1 && renderPlayer->previousGamepad.a == 0) {
+                    renderPlayer->selectedTeamIndex = renderPlayer->highlightedTeamIndex;
+                }
+            }
+            break;
+    }
+
+    renderPlayer->previousGamepad = *gamepad;
+}
+
+void nlRenderFeedInput(NlRender* self, SrGamepad* gamepads, const NlGame* predicted, const uint8_t localParticipants[],
+                       size_t localParticipantCount)
+{
+    for (size_t i = 0; i < localParticipantCount; ++i) {
+        NlrLocalPlayer* player = nlRenderFindLocalPlayerFromParticipantId(self, localParticipants[i]);
+        const NlPlayer* simulationPlayer = nlGameFindSimulationPlayerFromParticipantId(predicted, localParticipants[i]);
+        if (player != 0 && simulationPlayer != 0) {
+            updateInput(player, &gamepads[i], simulationPlayer);
+        }
+    }
 }
 
 void nlRenderClose(NlRender* self)
