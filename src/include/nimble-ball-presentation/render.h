@@ -46,6 +46,7 @@ typedef struct NlrBall {
 typedef struct NlrPlayer {
     NlrEntityInfo info;
     int countDown;
+    size_t destroyCountdown;
 } NlrPlayer;
 
 typedef struct NlrLocalPlayer {

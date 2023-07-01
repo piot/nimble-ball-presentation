@@ -77,8 +77,8 @@ void nlRenderInit(NlRender* self, SDL_Renderer* renderer)
 static BlVector2i simulationToRender(BlVector2 pos)
 {
     BlVector2i result;
-    result.x = pos.x;
-    result.y = pos.y;
+    result.x = (int) pos.x;
+    result.y = (int) pos.y;
 
     return result;
 }
@@ -113,8 +113,8 @@ static void renderGoals(SrRects* rectangleRender, const NlConstants* constants)
         SDL_Color teamColor = getTeamColor(goal->ownedByTeam);
         SDL_SetRenderDrawColor(rectangleRender->renderer, teamColor.r, teamColor.g, teamColor.b, teamColor.a);
 
-        srRectsLineRect(rectangleRender, goal->rect.position.x, goal->rect.position.y, goal->rect.size.x,
-                        goal->rect.size.y);
+        srRectsLineRect(rectangleRender, (int) goal->rect.position.x, (int) goal->rect.position.y,
+                        (int) goal->rect.size.x, (int) goal->rect.size.y);
     }
 }
 
@@ -123,7 +123,8 @@ static void renderBorders(SrRects* lineRender, const NlConstants* constants)
     SDL_SetRenderDrawColor(lineRender->renderer, 255, 240, 127, SDL_ALPHA_OPAQUE);
     for (size_t i = 0; i < sizeof(constants->borderSegments) / sizeof(constants->borderSegments[0]); ++i) {
         const BlLineSegment* lineSegment = &constants->borderSegments[i];
-        srRectsDrawLine(lineRender, lineSegment->a.x, lineSegment->a.y, lineSegment->b.x, lineSegment->b.y);
+        srRectsDrawLine(lineRender, (int) lineSegment->a.x, (int) lineSegment->a.y, (int) lineSegment->b.x,
+                        (int) lineSegment->b.y);
     }
 }
 
@@ -213,7 +214,7 @@ static void renderHud(const SrFont* font, const SrFont* bigFont, const NlGame* a
 
     switch (predicted->phase) {
         case NlGamePhaseCountDown:
-            renderCountDown(bigFont, predicted->phaseCountDown);
+            renderCountDown(bigFont, (uint8_t) predicted->phaseCountDown);
             break;
         case NlGamePhaseWaitingForPlayers:
             break;
@@ -247,7 +248,7 @@ static void renderStats(NlRender* self)
 
 #include <basal/math.h>
 
-const float lerpFactor = 0.6f;
+static const float lerpFactor = 1.0f;
 
 static void renderAvatar(NlRender* self, NlrAvatar* renderAvatar, const NlAvatar* avatar, Uint8 alpha)
 {
@@ -279,7 +280,7 @@ static void renderAvatar(NlRender* self, NlrAvatar* renderAvatar, const NlAvatar
                                                     : 1.0f;
 
     BlVector2i avatarRenderPos = simulationToRender(renderAvatar->precisionPosition);
-    int degreesAngle = (int) (renderAvatar->rotation * 360.0f / (M_PI * 2.0f));
+    int degreesAngle = (int) (renderAvatar->rotation * 360.0f / ((float) M_PI * 2.0f));
 
     srSpritesCopyEx(&self->spriteRender, &self->avatarSpriteForTeam[avatar->teamIndex], avatarRenderPos.x,
                     avatarRenderPos.y, degreesAngle, scale, alpha);
@@ -311,23 +312,23 @@ static void renderBall(NlRender* self, NlrBall* nlrBall, const NlBall* ball, Uin
     if (ball->collideCounter != nlrBall->simulationCollideCounter) {
         nlrBall->simulationCollideCounter = ball->collideCounter;
         nlrBall->lastCollisionCountDown = impactTime;
-        nlrBall->lastImpactPosition.x = ballRenderTargetPos.x;
-        nlrBall->lastImpactPosition.y = ballRenderTargetPos.y;
+        nlrBall->lastImpactPosition.x = (int) ballRenderTargetPos.x;
+        nlrBall->lastImpactPosition.y = (int) ballRenderTargetPos.y;
     }
 
     BlVector2 delta = blVector2Sub(ballRenderTargetPos, nlrBall->precisionPosition);
     nlrBall->precisionPosition = blVector2AddScale(nlrBall->precisionPosition, delta, lerpFactor);
 
-    float scale = nlrBall->spawnCountDown > 0u ? 1.0f - nlrBall->spawnCountDown / 60.0f : 1.0f;
+    float scale = nlrBall->spawnCountDown > 0u ? 1.0f - (float) nlrBall->spawnCountDown / 60.0f : 1.0f;
 
-    srSpritesCopyEx(&self->spriteRender, &self->ballSprite, nlrBall->precisionPosition.x, nlrBall->precisionPosition.y,
-                    0, scale, alpha);
+    srSpritesCopyEx(&self->spriteRender, &self->ballSprite, (int) nlrBall->precisionPosition.x,
+                    (int) nlrBall->precisionPosition.y, 0, scale, alpha);
 
     if (nlrBall->lastCollisionCountDown > 0u && alpha == SDL_ALPHA_OPAQUE) {
         nlrBall->lastCollisionCountDown--;
         SrSprite ballCollideSprite = self->ballSprite;
-        float normalizedTime = 1.0f - nlrBall->lastCollisionCountDown / (float) impactTime;
-        int spriteSheetIndex = normalizedTime * 2.9f;
+        float normalizedTime = 1.0f - (float) nlrBall->lastCollisionCountDown / (float) impactTime;
+        int spriteSheetIndex = (int) (normalizedTime * 2.9f);
         ballCollideSprite.rect.x = (spriteSheetIndex + 2) * 16;
         ballCollideSprite.rect.y = 0;
         ballCollideSprite.rect.w = 16;
@@ -344,8 +345,8 @@ static void renderBalls(NlRender* self, const NlGame* predicted, Uint8 alpha)
 
 static void renderLocalAvatarArrow(NlRender* self, const NlAvatar* avatar)
 {
-    int x = avatar->circle.center.x;
-    int y = avatar->circle.center.y + 26;
+    int x = (int) avatar->circle.center.x;
+    int y = (int) (avatar->circle.center.y + 26);
 
     srSpritesCopyEx(&self->spriteRender, &self->arrowSprite, x, y, 0, 1.0f, 0xff);
 }
@@ -353,6 +354,9 @@ static void renderLocalAvatarArrow(NlRender* self, const NlAvatar* avatar)
 static void renderMenus(NlRender* render, const SrFont* font, const SrFont* bigFont, const NlGame* predicted,
                         const NlPlayer* player, NlrLocalPlayer* renderPlayer)
 {
+    (void) bigFont;
+    (void) predicted;
+
     switch (player->phase) {
         case NlPlayerPhaseSelectTeam: {
             int backgroundY = 100;
@@ -366,7 +370,7 @@ static void renderMenus(NlRender* render, const SrFont* font, const SrFont* bigF
             srFontRenderAndCopy(font, "SELECT YOUR TEAM!", 200, 280, secondsColor);
             int jerseyY = 200;
             const float selectedScale = 4.0f;
-            const float notSelectedScale = 3.0;
+            const float notSelectedScale = 3.0f;
             srSpritesCopyEx(&render->spriteRender, &render->jerseySprite[0], 240, jerseyY, 0,
                             renderPlayer->highlightedTeamIndex == 0 ? selectedScale : notSelectedScale, 0xff);
             srSpritesCopyEx(&render->spriteRender, &render->jerseySprite[1], 400, jerseyY, 0,
@@ -431,6 +435,7 @@ static void renderPlayer(NlRender* render, NlrPlayer* renderPlayer, const NlPlay
     if (!renderPlayer->info.isUsed) {
         renderPlayer->info.isUsed = true;
         renderPlayer->countDown = 180;
+        renderPlayer->destroyCountdown = 0;
         // renderPlayer->participantId = player->assignedToParticipantIndex;
     }
 
@@ -442,10 +447,30 @@ static void renderPlayer(NlRender* render, NlrPlayer* renderPlayer, const NlPlay
         tc_snprintf(buf, 32, "player %d joined", player->playerIndex);
         srFontRenderAndCopy(&render->font, buf, 14, 15, playerJoinedColor);
     }
+
+    if (renderPlayer->destroyCountdown > 0) {
+        renderPlayer->destroyCountdown--;
+        if (renderPlayer->destroyCountdown == 0) {
+            renderPlayer->info.isUsed = false;
+        }
+
+        SDL_Color playerJoinedColor = getTeamColor(player->preferredTeamId);
+        char buf[32];
+        tc_snprintf(buf, 32, "player %d left", player->playerIndex);
+        srFontRenderAndCopy(&render->font, buf, 14, 15, playerJoinedColor);
+    }
 }
 
 static void renderPlayers(NlRender* render, const NlPlayers* players)
 {
+    for (size_t i = 0U; i < NL_MAX_PLAYERS; ++i) {
+        NlrPlayer* renderPlayer = &render->players[i];
+
+        if (renderPlayer->info.isUsed && i >= players->playerCount && renderPlayer->destroyCountdown == 0) {
+            renderPlayer->destroyCountdown = 120U;
+        }
+    }
+
     for (size_t i = 0u; i < players->playerCount; ++i) {
         const NlPlayer* player = &players->players[i];
         renderPlayer(render, &render->players[i], player);
@@ -543,6 +568,10 @@ static void updateInput(NlrLocalPlayer* renderPlayer, const SrGamepad* gamepad, 
                 }
             }
             break;
+        case NlPlayerPhaseCommittedToTeam:
+            break;
+        case NlPlayerPhasePlaying:
+            break;
     }
 
     renderPlayer->previousGamepad = *gamepad;
@@ -551,6 +580,8 @@ static void updateInput(NlrLocalPlayer* renderPlayer, const SrGamepad* gamepad, 
 void nlRenderFeedInput(NlRender* self, SrGamepad* gamepads, const NlGame* predicted, const uint8_t localParticipants[],
                        size_t localParticipantCount)
 {
+
+
     for (size_t i = 0; i < localParticipantCount; ++i) {
         NlrLocalPlayer* player = nlRenderFindLocalPlayerFromParticipantId(self, localParticipants[i]);
         const NlPlayer* simulationPlayer = nlGameFindSimulationPlayerFromParticipantId(predicted, localParticipants[i]);
@@ -562,4 +593,5 @@ void nlRenderFeedInput(NlRender* self, SrGamepad* gamepads, const NlGame* predic
 
 void nlRenderClose(NlRender* self)
 {
+    (void) self;
 }
