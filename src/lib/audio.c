@@ -3,11 +3,12 @@
 
 void nlAudioInit(NlAudio* self, SrAudio* audio)
 {
+    (void) audio;
     self->lastPlayedCountdown = 0;
     char filename[64];
 
     for (size_t i = 0; i < 4; ++i) {
-        tc_snprintf(filename, 64, "data/audio/countdown_%d.wav", i);
+        tc_snprintf(filename, 64, "data/audio/countdown_%zu.wav", i);
         int result = srSampleLoad(&self->countDown[i], filename);
         if (result < 0) {
             CLOG_ERROR("could not load countdown")
@@ -33,6 +34,10 @@ void nlAudioInit(NlAudio* self, SrAudio* audio)
 void nlAudioUpdate(NlAudio* self, const struct NlGame* authoritative, const struct NlGame* predicted,
                    const uint8_t localParticipants[], size_t localParticipantCount)
 {
+    (void) authoritative;
+    (void) localParticipants;
+    (void) localParticipantCount;
+
     const NlGame* state = predicted;
 
     if (state->phase == NlGamePhaseCountDown) {
