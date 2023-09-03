@@ -282,6 +282,10 @@ static void renderAvatar(NlRender* self, NlrAvatar* renderAvatar, const NlAvatar
     BlVector2i avatarRenderPos = simulationToRender(renderAvatar->precisionPosition);
     int degreesAngle = (int) (renderAvatar->rotation * 360.0f / ((float) M_PI * 2.0f));
 
+    if (avatar->isInvisible) {
+        alpha = 0x20;
+    }
+
     srSpritesCopyEx(&self->spriteRender, &self->avatarSpriteForTeam[avatar->teamIndex], avatarRenderPos.x,
                     avatarRenderPos.y, degreesAngle, scale, alpha);
 }
